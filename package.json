@@ -9,7 +9,10 @@
     "dev": "concurrently -k \"cross-env VITE_DEV_SERVER_URL=http://localhost:5173 pnpm run start:electron\" \"vite\"",
     "start:electron": "pnpm run build:preload && pnpm run build:main && electron dist-electron/main/index.js",
     "dist": "pnpm run build && electron-builder",
-    "dist:mac": "cross-env ELECTRON_BUILDER_PLATFORM=darwin pnpm run dist"
+    "dist:mac-x64": "cross-env ELECTRON_BUILDER_ARCH=x64 pnpm run build && electron-builder --mac",
+    "dist:mac-arm64": "cross-env ELECTRON_BUILDER_ARCH=arm64 pnpm run build && electron-builder --mac",
+    "dist:linux-x64": "cross-env ELECTRON_BUILDER_ARCH=x64 pnpm run build && electron-builder --linux",
+    "dist:linux-arm64": "cross-env ELECTRON_BUILDER_ARCH=arm64 pnpm run build && electron-builder --linux"
   },
   "main": "dist-electron/main/index.js",
   "keywords": [],
