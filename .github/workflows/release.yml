@@ -3,11 +3,12 @@ name: Release
 on:
   push:
     tags:
-      - 'v*' # 当推送以v开头的标签时触发
+      - 'v*'
 
 jobs:
   release:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     
     strategy:
       matrix:
@@ -16,23 +17,18 @@ jobs:
           - os: macos-latest
             arch: x64
             target: mac-x64
-            artifact-pattern: "dist/*.dmg"
           - os: macos-latest
             arch: arm64
             target: mac-arm64
-            artifact-pattern: "dist/*.dmg"
           - os: ubuntu-latest
             arch: x64
             target: linux-x64
-            artifact-pattern: "dist/*.AppImage"
           - os: ubuntu-latest
             arch: arm64
             target: linux-arm64
-            artifact-pattern: "dist/*.AppImage"
           - os: windows-latest
             arch: x64
             target: win-x64
-            artifact-pattern: "dist/*.exe"
 
     steps:
       - name: Checkout code
@@ -49,57 +45,33 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      - name: Debug environment
-        run: |
-          echo "Node version:"
-          node --version
-          echo "npm version:"
-          npm --version
-          echo "pnpm version:"
-          pnpm --version
-          echo "Current directory:"
-          pwd
-          echo "Directory contents:"
-          ls -la
-
       - name: Install dependencies
-        run: |
-          echo "Installing dependencies..."
-          pnpm install --no-frozen-lockfile
-          echo "Dependencies installed successfully"
-
-      - name: Debug package.json
-        run: |
-          echo "Package.json scripts:"
-          cat package.json | grep -A 20 '"scripts"'
-          echo "Available scripts:"
-          pnpm run --help || echo "pnpm run help failed"
+        shell: bash
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build application
+        shell: bash
         run: |
-          echo "Building for target: ${{ matrix.target }}"
-          echo "Architecture: ${{ matrix.arch }}"
+          export ELECTRON_BUILDER_ARCH=${{ matrix.arch }}
+          export ELECTRON_CACHE=${{ github.workspace }}/.cache/electron
+          export ELECTRON_BUILDER_CACHE=${{ github.workspace }}/.cache/electron-builder
+          mkdir -p ${{ github.workspace }}/.cache/electron
+          mkdir -p ${{ github.workspace }}/.cache/electron-builder
           pnpm run dist:${{ matrix.target }}
         env:
           ELECTRON_BUILDER_ARCH: ${{ matrix.arch }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: List build artifacts
-        run: |
-          echo "Build artifacts:"
-          ls -la dist/ || echo "dist directory not found"
-          echo "Current directory:"
-          pwd
-          echo "All files in current directory:"
-          find . -name "*.dmg" -o -name "*.AppImage" -o -name "*.exe" -o -name "*.zip" || echo "No build artifacts found"
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-${{ github.ref_name }}
-          path: ${{ matrix.artifact-pattern }}
+          path: |
+            dist/**/*.dmg
+            dist/**/*.AppImage
+            dist/**/*.exe
+            dist/**/*.zip
           retention-days: 30
-        continue-on-error: true
 
   create-release:
     needs: release
@@ -114,11 +86,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: List downloaded artifacts
-        run: |
-          echo "Downloaded artifacts:"
-          find artifacts -type f -name "*.dmg" -o -name "*.AppImage" -o -name "*.exe" -o -name "*.zip" || echo "No artifacts found"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
