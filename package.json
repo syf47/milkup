@@ -53,7 +53,11 @@
       "target": "nsis"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "entitlements": null,
+      "entitlementsInherit": null
     },
     "linux": {
       "target": "AppImage"
@@ -64,7 +68,26 @@
     "electronVersion": "37.2.4",
     "compression": "store",
     "generateUpdatesFilesForAllChannels": false,
-    "publish": null
+    "publish": null,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "extraResources": [],
+    "extraFiles": [],
+    "asar": true,
+    "asarUnpack": [],
+    "forceCodeSigning": false,
+    "electronUpdaterCompatibility": ">=2.16",
+    "electronLanguages": ["en"],
+    "detectUpdateChannel": false,
+    "releaseInfo": {
+      "releaseName": "v${version}",
+      "releaseNotes": "Release ${version}"
+    }
   },
   "dependencies": {
     "@codemirror/basic-setup": "^0.20.0",

@@ -45,12 +45,15 @@ jobs:
       - name: Build application
         shell: bash
         run: |
+          echo "Building for target: ${{ matrix.target }}"
+          echo "Architecture: ${{ matrix.arch }}"
           export ELECTRON_BUILDER_ARCH=${{ matrix.arch }}
           export ELECTRON_CACHE=${{ github.workspace }}/.cache/electron
           export ELECTRON_BUILDER_CACHE=${{ github.workspace }}/.cache/electron-builder
           mkdir -p ${{ github.workspace }}/.cache/electron
           mkdir -p ${{ github.workspace }}/.cache/electron-builder
           pnpm run dist:${{ matrix.target }}
+          echo "Build completed for ${{ matrix.target }}"
         env:
           ELECTRON_BUILDER_ARCH: ${{ matrix.arch }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
