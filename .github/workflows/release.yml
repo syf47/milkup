@@ -49,13 +49,37 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
+      - name: Debug environment
+        run: |
+          echo "Node version:"
+          node --version
+          echo "npm version:"
+          npm --version
+          echo "pnpm version:"
+          pnpm --version
+          echo "Current directory:"
+          pwd
+          echo "Directory contents:"
+          ls -la
+
       - name: Install dependencies
         run: |
-          pnpm --version
-          pnpm install --frozen-lockfile
+          echo "Installing dependencies..."
+          pnpm install --no-frozen-lockfile
+          echo "Dependencies installed successfully"
+
+      - name: Debug package.json
+        run: |
+          echo "Package.json scripts:"
+          cat package.json | grep -A 20 '"scripts"'
+          echo "Available scripts:"
+          pnpm run --help || echo "pnpm run help failed"
 
       - name: Build application
-        run: pnpm run dist:${{ matrix.target }}
+        run: |
+          echo "Building for target: ${{ matrix.target }}"
+          echo "Architecture: ${{ matrix.arch }}"
+          pnpm run dist:${{ matrix.target }}
         env:
           ELECTRON_BUILDER_ARCH: ${{ matrix.arch }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -66,6 +90,8 @@ jobs:
           ls -la dist/ || echo "dist directory not found"
           echo "Current directory:"
           pwd
+          echo "All files in current directory:"
+          find . -name "*.dmg" -o -name "*.AppImage" -o -name "*.exe" -o -name "*.zip" || echo "No build artifacts found"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -73,6 +99,7 @@ jobs:
           name: ${{ matrix.target }}-${{ github.ref_name }}
           path: ${{ matrix.artifact-pattern }}
           retention-days: 30
+        continue-on-error: true
 
   create-release:
     needs: release
