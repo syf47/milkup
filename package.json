@@ -57,7 +57,14 @@
     },
     "linux": {
       "target": "AppImage"
-    }
+    },
+    "electronDownload": {
+      "cache": "./.cache/electron"
+    },
+    "electronVersion": "37.2.4",
+    "compression": "store",
+    "generateUpdatesFilesForAllChannels": false,
+    "publish": null
   },
   "dependencies": {
     "@codemirror/basic-setup": "^0.20.0",
