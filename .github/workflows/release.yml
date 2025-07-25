@@ -79,6 +79,16 @@ jobs:
         with:
           path: artifacts
 
+      - name: Clean unwanted files
+        shell: bash
+        run: |
+          echo "Cleaning unwanted files..."
+          find artifacts -name "*.blockmap" -delete
+          find artifacts -name "*.yml" -delete
+          find artifacts -name "*.yaml" -delete
+          echo "Remaining files:"
+          find artifacts -type f
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
