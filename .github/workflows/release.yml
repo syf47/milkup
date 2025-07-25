@@ -17,18 +17,23 @@ jobs:
           - os: macos-latest
             arch: x64
             target: mac-x64
+            artifact-pattern: "dist/*.dmg"
           - os: macos-latest
             arch: arm64
             target: mac-arm64
+            artifact-pattern: "dist/*.dmg"
           - os: ubuntu-latest
             arch: x64
             target: linux-x64
+            artifact-pattern: "dist/*.AppImage"
           - os: ubuntu-latest
             arch: arm64
             target: linux-arm64
+            artifact-pattern: "dist/*.AppImage"
           - os: windows-latest
             arch: x64
             target: win-x64
+            artifact-pattern: "dist/*.exe"
 
     steps:
       - name: Checkout code
@@ -66,11 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-${{ github.ref_name }}
-          path: |
-            dist/**/*.dmg
-            dist/**/*.AppImage
-            dist/**/*.exe
-            dist/**/*.zip
+          path: ${{ matrix.artifact-pattern }}
           retention-days: 30
 
   create-release:
