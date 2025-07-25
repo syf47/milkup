@@ -54,6 +54,13 @@ jobs:
           mkdir -p ${{ github.workspace }}/.cache/electron-builder
           pnpm run dist:${{ matrix.target }}
           echo "Build completed for ${{ matrix.target }}"
+          
+          echo "Cleaning unwanted files after build..."
+          find dist -name "*.blockmap" -delete
+          find dist -name "*.yml" -delete
+          find dist -name "*.yaml" -delete
+          echo "Remaining files in dist:"
+          find dist -type f
         env:
           ELECTRON_BUILDER_ARCH: ${{ matrix.arch }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
