@@ -11,9 +11,9 @@
     "dist": "pnpm run build && electron-builder",
     "dist:mac-x64": "cross-env ELECTRON_BUILDER_ARCH=x64 pnpm run build && electron-builder --mac --publish never",
     "dist:mac-arm64": "cross-env ELECTRON_BUILDER_ARCH=arm64 pnpm run build && electron-builder --mac --publish never",
-    "dist:linux-x64": "cross-env ELECTRON_BUILDER_ARCH=x64 pnpm run build && electron-builder --linux",
-    "dist:linux-arm64": "cross-env ELECTRON_BUILDER_ARCH=arm64 pnpm run build && electron-builder --linux",
-    "dist:win-x64": "cross-env ELECTRON_BUILDER_ARCH=x64 pnpm run build && electron-builder --win"
+    "dist:linux-x64": "cross-env ELECTRON_BUILDER_ARCH=x64 pnpm run build && electron-builder --linux --publish never",
+    "dist:linux-arm64": "cross-env ELECTRON_BUILDER_ARCH=arm64 pnpm run build && electron-builder --linux --publish never",
+    "dist:win-x64": "cross-env ELECTRON_BUILDER_ARCH=x64 pnpm run build && electron-builder --win --publish never"
   },
   "main": "dist-electron/main/index.js",
   "keywords": [],
