@@ -69,8 +69,6 @@ jobs:
         run: |
           echo "Building for ${{ matrix.platform }}-${{ matrix.arch }}"
           pnpm run ${{ matrix.script }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts (macOS x64)
         if: matrix.platform == 'mac' && matrix.arch == 'x64'
