@@ -3,6 +3,7 @@ import { basicSetup, EditorView } from '@codemirror/basic-setup'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorState } from '@codemirror/state'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import useContent from '@/hooks/useContent'
 
 const props = defineProps<{
   modelValue: string
@@ -10,6 +11,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:modelValue'])
 
 const editorContainer = ref<HTMLElement>()
+const { currentScrollRatio, initScrollListener } = useContent()
 let editorView: EditorView | null = null
 
 onMounted(() => {
@@ -31,6 +33,14 @@ onMounted(() => {
     state: startState,
     parent: editorContainer.value!,
   })
+  initScrollListener()
+  if (currentScrollRatio.value > 0) {
+    const el = document.querySelector('.cm-scroller')
+    if (!el) return
+    const scrollHeight = el.scrollHeight || 0
+    const targetScrollTop = scrollHeight * currentScrollRatio.value
+    el.scrollTop = targetScrollTop
+  }
 })
 
 // 同步外部 props 变化
@@ -53,7 +63,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="editorContainer" class="editor-container" />
+  <div ref="editorContainer" id="codemirror" class="editor-container" />
 </template>
 
 <style scoped>

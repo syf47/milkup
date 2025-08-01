@@ -7,8 +7,11 @@ import { automd } from '@milkdown/plugin-automd'
 import { commonmark } from '@milkdown/preset-commonmark'
 import { onMounted } from 'vue'
 import { uploader } from '@/plugins/customPastePlugin'
-
+import useContent from '@/hooks/useContent'
 import emitter from '../events'
+import rehypeRaw from 'rehype-raw';
+import { remarkCtx } from '@milkdown/core';
+import { htmlNode } from '@/plugins/rawHtmlPlugin'
 
 const props = defineProps<{
   modelValue: string
@@ -16,6 +19,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
 }>()
+
+const { currentScrollRatio, initScrollListener } = useContent()
 
 onMounted(async () => {
   // 预览模式下支持自定义css文件路径解析
@@ -47,8 +52,20 @@ onMounted(async () => {
   editor.use(commonmark)
     .use(automd)
     .use(upload)
+
   await crepe.create()
   editor.ctx.update(uploadConfig.key, prev => ({ ...prev, uploader }))
+  editor.ctx.update(remarkCtx, (prev) => prev.use(rehypeRaw));
+  htmlNode(editor.ctx);
+  initScrollListener()
+  // 滚动到指定位置
+  if (currentScrollRatio.value > 0) {
+    const el = document.querySelector('.scrollView.milkdown')
+    if (!el) return
+    const scrollHeight = el.scrollHeight || 0
+    const targetScrollTop = scrollHeight * currentScrollRatio.value
+    el.scrollTop = targetScrollTop
+  }
 })
 function emitOutlineUpdate(ctx: Ctx) {
   const headings = outline()(ctx)
@@ -58,7 +75,7 @@ function emitOutlineUpdate(ctx: Ctx) {
 
 <template>
   <div class="editor-box">
-    <div class="scrollView">
+    <div class="scrollView milkdown">
       <div id="milkdown"></div>
     </div>
   </div>
