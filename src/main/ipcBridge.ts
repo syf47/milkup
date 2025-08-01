@@ -45,6 +45,18 @@ export function registerIpcOnHandlers(win: Electron.BrowserWindow) {
     isSaved = isSavedStatus
     win.webContents.send('save-status-changed', isSaved)
   })
+
+  // 监听保存事件
+  ipcMain.on('menu-save', async (_event, shouldClose) => {
+    win.webContents.send('trigger-save', shouldClose)
+  })
+
+  // 监听丢弃更改事件
+  ipcMain.on('close:discard', () => {
+    isQuitting = true
+    win.close()
+    app.quit()
+  })
 }
 
 // 所有 handle 类型监听
@@ -119,6 +131,7 @@ export function registerIpcHandleHandlers(win: Electron.BrowserWindow) {
     return response
   })
 }
+
 export function close(win: Electron.BrowserWindow) {
   // 防止重复调用
   if (isQuitting) {
