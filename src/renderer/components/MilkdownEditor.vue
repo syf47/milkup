@@ -10,8 +10,6 @@ import { uploader } from '@/plugins/customPastePlugin'
 import useContent from '@/hooks/useContent'
 import emitter from '../events'
 import rehypeRaw from 'rehype-raw';
-import { remarkCtx } from '@milkdown/core';
-import { htmlNode } from '@/plugins/rawHtmlPlugin'
 
 const props = defineProps<{
   modelValue: string
@@ -55,8 +53,6 @@ onMounted(async () => {
 
   await crepe.create()
   editor.ctx.update(uploadConfig.key, prev => ({ ...prev, uploader }))
-  editor.ctx.update(remarkCtx, (prev) => prev.use(rehypeRaw));
-  htmlNode(editor.ctx);
   initScrollListener()
   // 滚动到指定位置
   if (currentScrollRatio.value > 0) {
