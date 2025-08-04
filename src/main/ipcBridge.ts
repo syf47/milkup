@@ -120,26 +120,20 @@ export function registerIpcHandleHandlers(win: Electron.BrowserWindow) {
   })
 }
 export function close(win: Electron.BrowserWindow) {
+  // 防止重复调用
+  if (isQuitting) {
+    return
+  }
+
   if (isSaved) {
     isQuitting = true
     win.close()
     app.quit()
   } else {
-    const options: Electron.MessageBoxSyncOptions = {
-      type: 'warning',
-      title: '确认关闭',
-      message: '当前文档有未保存的修改，是否确认关闭？',
-      buttons: ['确认', '保存并关闭', '取消'],
-      defaultId: 1,
-      cancelId: 2,
-    }
-    const response = dialog.showMessageBoxSync(win, options)
-    if (response === 0) {
-      isQuitting = true
-      win.close()
-      app.quit()
-    } else if (response === 1) {
-      win.webContents.send('menu-save', true)
+    // 检查窗口是否仍然有效
+    if (win && !win.isDestroyed()) {
+      // 发送事件到渲染进程显示前端弹窗
+      win.webContents.send('close:confirm')
     }
   }
 }
