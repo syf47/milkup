@@ -133,13 +133,21 @@ export function registerIpcHandleHandlers(win: Electron.BrowserWindow) {
 }
 
 export function close(win: Electron.BrowserWindow) {
+  // 防止重复调用
+  if (isQuitting) {
+    return
+  }
+
   if (isSaved) {
     isQuitting = true
     win.close()
     app.quit()
   } else {
-    // 发送事件到渲染进程显示前端弹窗
-    win.webContents.send('close:confirm')
+    // 检查窗口是否仍然有效
+    if (win && !win.isDestroyed()) {
+      // 发送事件到渲染进程显示前端弹窗
+      win.webContents.send('close:confirm')
+    }
   }
 }
 
