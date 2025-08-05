@@ -1,6 +1,6 @@
 {
   "name": "milkup",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A Markdown editor built with Milkdown and Vue.js",
   "author": "Larry Zhu",
   "license": "MIT",
