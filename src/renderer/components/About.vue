@@ -1,9 +1,20 @@
 <script setup lang="ts">
 import logo from '@/assets/icons/milkup.ico'
 import { version } from '../../../package.json'
+// import { open } from '@tauri-apps/api/shell'
 
-function openByDefaultBrowser(url: string) {
-  window.electronAPI.openExternal(url)
+async function openByDefaultBrowser(url: string) {
+  // TODO: 实现Tauri版本的外部链接打开
+  // try {
+  //   await open(url)
+  // } catch (error) {
+  //   console.error('Failed to open external link:', error)
+  //   // 降级到window.open
+  //   window.open(url, '_blank')
+  // }
+
+  // 临时使用window.open
+  window.open(url, '_blank')
 }
 </script>
 

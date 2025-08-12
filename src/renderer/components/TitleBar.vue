@@ -1,25 +1,36 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+// import { invoke } from '@tauri-apps/api'
+// import { getCurrent } from '@tauri-apps/api/window'
 import useTitle from '../../hooks/useTitle'
 import MenuDropDown from './MenuDropDown.vue'
 
-const isWin = window.electronAPI.platform === 'win32'
+// 获取平台信息
+const isWin = ref(false)
+// TODO: 实现Tauri版本的平台检测
+// invoke<string>('get_platform').then(platform => {
+//   isWin.value = platform === 'win32'
+// })
+
 const { title } = useTitle()
 
 const isFullScreen = ref(false)
-function minimize() {
-  window.electronAPI?.windowControl?.('minimize')
+
+async function minimize() {
+  // TODO: 实现Tauri版本的窗口最小化
+  console.log('Minimize window - Tauri implementation needed')
 }
-function toggleMaximize() {
+
+async function toggleMaximize() {
+  // TODO: 实现Tauri版本的窗口最大化
   isFullScreen.value = !isFullScreen.value
-  window.electronAPI?.windowControl?.('maximize')
+  console.log('Toggle maximize - Tauri implementation needed')
 }
+
 async function close() {
-  window.electronAPI?.windowControl?.('close')
+  // TODO: 实现Tauri版本的窗口关闭
+  console.log('Close window - Tauri implementation needed')
 }
-window.electronAPI.on('close', () => {
-  close()
-})
 </script>
 
 <template>

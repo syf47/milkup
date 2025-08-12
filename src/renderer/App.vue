@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { MilkdownProvider } from '@milkdown/vue'
 import { nextTick, ref, watch } from 'vue'
+// import { event } from '@tauri-apps/api'
+// import { getCurrent } from '@tauri-apps/api/window'
 import useContent from '@/hooks/useContent'
 import useFile from '@/hooks/useFile'
 import { isShowOutline } from '@/hooks/useOutline'
@@ -34,21 +36,23 @@ emitter.on('file:Change', () => {
   reBuildMilkdown()
 })
 
+// TODO: 实现Tauri版本的关闭确认和保存触发事件
 // 监听关闭确认事件
-window.electronAPI.on('close:confirm', async () => {
-  const result = await showDialog()
-  if (result === 'save') {
-    await onSave()
-  } else if (result === 'discard') {
-    // 直接关闭应用
-    window.electronAPI.closeDiscard()
-  }
-})
+// event.listen('close:confirm', async () => {
+//   const result = await showDialog()
+//   if (result === 'save') {
+//     await onSave()
+//   } else if (result === 'discard') {
+//     // 直接关闭应用
+//     const currentWindow = getCurrent()
+//     await currentWindow.close()
+//   }
+// })
 
 // 监听保存触发事件
-window.electronAPI.on('trigger-save', async () => {
-  await onSave()
-})
+// event.listen('trigger-save', async () => {
+//   await onSave()
+// })
 
 function reBuildMilkdown() {
   isShowEditors.value = false

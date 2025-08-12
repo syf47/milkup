@@ -39,9 +39,10 @@ function countMarkdownChars(text: string): number {
   const base64Regex = /data:image\/[a-zA-Z]+;base64,[a-zA-Z0-9+/=]+/g
   return (text.replaceAll('&#x20;', '').replace(base64Regex, 'image').trim() || '').split('').length
 }
-window.electronAPI.on('view:toggleView', () => {
-  toggleSourceCode()
-})
+// TODO: 实现Tauri版本的视图切换事件
+// window.electronAPI.on('view:toggleView', () => {
+//   toggleSourceCode()
+// })
 </script>
 
 <template>

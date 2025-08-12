@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+// import { invoke } from '@tauri-apps/api'
 import useContent from './useContent'
 
 const { filePath, isModified } = useContent()
@@ -10,11 +11,19 @@ const fileName = computed(() => {
   return parts.at(-1) ?? ''
 })
 
-function updateTitle() {
+async function updateTitle() {
   const name = fileName.value || 'Untitled'
   const prefix = isModified.value ? '*' : ''
-  window.electronAPI.setTitle(`milkup - ${prefix}${name}`)
-  title.value = `milkup - ${prefix}${name}`
+  const titleText = `milkup - ${prefix}${name}`
+
+  // TODO: 实现Tauri版本的设置标题
+  // try {
+  //   await invoke('set_title', { title: titleText })
+  // } catch (error) {
+  //   console.error('Failed to set title:', error)
+  // }
+
+  title.value = titleText
 }
 
 export default function useTitle() {

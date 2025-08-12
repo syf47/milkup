@@ -13,7 +13,8 @@ watch(isModified, (newValue) => {
   // 只有在有内容时才通知主进程保存状态
   // 如果 markdown 为空且 originalContent 也为空，说明是新建文档，不需要通知
   if (contentInfo.markdown.value || contentInfo.originalContent.value) {
-    window.electronAPI.changeSaveStatus(!newValue) // 通知主进程保存状态, 修改后(isModified==true) isSaved 为 false
+    // TODO: 实现Tauri版本的保存状态通知
+    // window.electronAPI.changeSaveStatus(!newValue) // 通知主进程保存状态, 修改后(isModified==true) isSaved 为 false
   }
 }, { immediate: true })
 
