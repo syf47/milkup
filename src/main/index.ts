@@ -95,17 +95,26 @@ function sendLaunchFileIfExists() {
 
   if (fileArg) {
     const absolutePath = path.resolve(fileArg)
-    if (fs.existsSync(absolutePath)) {
-      const content = fs.readFileSync(absolutePath, 'utf-8')
-      win.webContents.send('open-file-at-launch', {
-        filePath: absolutePath,
-        content,
-      })
-    } else {
-      console.warn('[main] 文件不存在:', absolutePath)
-    }
+    // 使用通用的文件打开函数，它会处理窗口加载状态
+    openFileFromPath(absolutePath)
   }
 }
+
+// macOS 上处理文件关联打开事件 - 需要在app.whenReady之前注册
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+
+  if (filePath.endsWith('.md') || filePath.endsWith('.markdown')) {
+    // 如果应用还没准备好，等待准备完成
+    if (!app.isReady()) {
+      app.whenReady().then(() => {
+        openFileFromPath(filePath)
+      })
+    } else {
+      openFileFromPath(filePath)
+    }
+  }
+})
 
 app.whenReady().then(async () => {
   await createWindow()
@@ -150,3 +159,43 @@ app.on('activate', () => {
     }
   }
 })
+
+// 从文件路径打开文件的通用函数
+function openFileFromPath(filePath: string) {
+  try {
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf-8')
+
+      // 确保窗口存在并且已加载完成
+      if (win && win.webContents) {
+        // 如果窗口被隐藏，显示它
+        if (!win.isVisible()) {
+          win.show()
+        }
+
+        // 将窗口置于前台
+        win.focus()
+
+        // 如果窗口还在加载，等待加载完成
+        if (win.webContents.isLoading()) {
+          win.webContents.once('did-finish-load', () => {
+            win.webContents.send('open-file-at-launch', {
+              filePath,
+              content,
+            })
+          })
+        } else {
+          // 窗口已加载完成，直接发送
+          win.webContents.send('open-file-at-launch', {
+            filePath,
+            content,
+          })
+        }
+      }
+    } else {
+      console.warn('[main] 文件不存在:', filePath)
+    }
+  } catch (error) {
+    console.error('[main] 打开文件时发生错误:', error)
+  }
+}
