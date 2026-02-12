@@ -1,6 +1,8 @@
 import type { Tab } from "@/types/tab";
-// useFile.ts
 import { nextTick, onUnmounted } from "vue";
+import { useTauriEvents } from "@/composables/useTauriEvents";
+import { useTauriFile } from "@/composables/useTauriFile";
+import { useTauriSystem } from "@/composables/useTauriSystem";
 import { reverseProcessImagePaths } from "@/plugins/imagePathPlugin";
 import emitter from "@/renderer/events";
 import { readAndProcessFile, repairMarkdown } from "@/renderer/services/fileService";
@@ -10,16 +12,18 @@ import useTitle from "./useTitle";
 
 const defaultName = "Untitled";
 
-async function onOpen(result?: { filePath: string; content: string } | null) {
+async function onOpen(result?: { file_path: string; content: string } | null) {
   const { updateTitle } = useTitle();
   const { markdown, filePath, originalContent } = useContent();
   const { createTabFromFile, updateCurrentTabContent, switchToTab, getFileName, tabs } = useTab();
+  const { openFile, isFileReadonly } = useTauriFile();
 
   if (!result) {
-    result = await window.electronAPI.openFile();
+    result = await openFile();
   }
   if (result) {
-    filePath.value = result.filePath;
+    const resultFilePath = result.file_path;
+    filePath.value = resultFilePath;
     if (
       tabs.value.length === 1 &&
       tabs.value[0].filePath === null &&
@@ -37,7 +41,7 @@ async function onOpen(result?: { filePath: string; content: string } | null) {
       setTimeout(() => {
         tab.normalizationGrace = false;
       }, 600);
-      tab.readOnly = await window.electronAPI.getIsReadOnly(result.filePath);
+      tab.readOnly = await isFileReadonly(resultFilePath);
       tab.isModified = false;
 
       updateCurrentTabContent(repairedContent, false);
@@ -49,8 +53,8 @@ async function onOpen(result?: { filePath: string; content: string } | null) {
     } else {
       // 创建新tab
       const repairedContent = repairMarkdown(result.content);
-      const tab = await createTabFromFile(result.filePath, repairedContent);
-      tab.readOnly = await window.electronAPI.getIsReadOnly(result.filePath);
+      const tab = await createTabFromFile(resultFilePath, repairedContent);
+      tab.readOnly = await isFileReadonly(resultFilePath);
       // 更新当前内容状态
       markdown.value = tab.content;
       originalContent.value = repairedContent;
@@ -85,22 +89,23 @@ async function onSaveAs() {
   const { updateTitle } = useTitle();
   const { markdown, filePath, originalContent } = useContent();
   const { updateCurrentTabContent, currentTab } = useTab();
+  const { saveFileAs } = useTauriFile();
 
   // 先更新当前tab的内容
   updateCurrentTabContent(markdown.value);
 
   const reversedContent = reverseProcessImagePaths(markdown.value, filePath.value);
-  const result = await window.electronAPI.saveFileAs(reversedContent);
+  const result = await saveFileAs(reversedContent);
   if (result) {
     // 更新当前tab的文件路径
     if (currentTab.value) {
-      currentTab.value.filePath = result.filePath;
-      currentTab.value.name = result.filePath.split(/[\\/]/).at(-1) || "Untitled";
+      currentTab.value.filePath = result.file_path;
+      currentTab.value.name = result.file_path.split(/[\\/]/).at(-1) || "Untitled";
       currentTab.value.originalContent = markdown.value;
       currentTab.value.isModified = false;
     }
 
-    filePath.value = result.filePath;
+    filePath.value = result.file_path;
     originalContent.value = markdown.value;
     updateTitle();
   }
@@ -154,6 +159,9 @@ export default function useFile() {
     hasUnsavedTabs,
     tabs,
   } = useTab();
+  const { on } = useTauriEvents();
+  const { isFileReadonly } = useTauriFile();
+  const { rendererReady } = useTauriSystem();
 
   // 拖拽打开 Markdown 文件
   const handleDragOver = (event: DragEvent) => {
@@ -212,17 +220,10 @@ export default function useFile() {
       // 尝试获取文件的完整路径
       let fullPath: string | null = null;
 
-      try {
-        // 使用 webUtils.getPathForFile 方法
-        const pathResult = window.electronAPI.getPathForFile(mdFile);
-        fullPath = pathResult || null;
-      } catch {}
-
-      if (!fullPath) {
-        const electronFile = mdFile as any;
-        if (electronFile.path) {
-          fullPath = electronFile.path;
-        }
+      // Tauri 中拖拽文件可能带有 path 属性
+      const tauriFile = mdFile as any;
+      if (tauriFile.path) {
+        fullPath = tauriFile.path;
       }
 
       if (fullPath) {
@@ -290,15 +291,15 @@ export default function useFile() {
   };
 
   // 注册启动时文件打开监听
-  window.electronAPI?.onOpenFileAtLaunch?.(async ({ filePath: launchFilePath, content }) => {
+  on<{ file_path: string; content: string }>("open-file-at-launch", async (payload) => {
     // 创建新tab
-    const repairedContent = repairMarkdown(content);
-    const tab = await createTabFromFile(launchFilePath, repairedContent);
-    tab.readOnly = await window.electronAPI.getIsReadOnly(launchFilePath);
+    const repairedContent = repairMarkdown(payload.content);
+    const tab = await createTabFromFile(payload.file_path, repairedContent);
+    tab.readOnly = await isFileReadonly(payload.file_path);
 
     // 更新当前内容状态
     markdown.value = tab.content;
-    filePath.value = launchFilePath;
+    filePath.value = payload.file_path;
     originalContent.value = repairedContent;
 
     updateTitle();
@@ -308,11 +309,21 @@ export default function useFile() {
   });
 
   // ✅ 通知主进程渲染进程已就绪，可以接收文件了
-  window.electronAPI?.rendererReady?.();
+  rendererReady();
 
   // 注册菜单事件
-  window.electronAPI.on?.("menu-open", onOpen);
-  window.electronAPI.on?.("menu-save", onSave);
+  on("menu-open", () => onOpen());
+  on("menu-save", onSave);
+  on("menu-new", createNewFile);
+
+  // 注册 Cmd/Ctrl+S 快捷键（用于非 macOS 平台，macOS 由原生菜单处理）
+  const handleKeyboardSave = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      onSave();
+    }
+  };
+  window.addEventListener("keydown", handleKeyboardSave);
 
   // 注册拖拽事件
   window.addEventListener("dragover", handleDragOver);
@@ -323,13 +334,10 @@ export default function useFile() {
 
   // 清理函数
   onUnmounted(() => {
-    // 清理IPC监听器
-    window.electronAPI?.removeListener?.("menu-open", onOpen);
-    window.electronAPI?.removeListener?.("menu-save", onSave);
-
     // 清理DOM事件监听器
     window.removeEventListener("dragover", handleDragOver);
     window.removeEventListener("drop", handleDrop);
+    window.removeEventListener("keydown", handleKeyboardSave);
 
     // 清理emitter事件监听器
     emitter.off("tab:switch", tabSwitch);

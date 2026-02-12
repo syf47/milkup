@@ -19,7 +19,11 @@ build/
 # Vite cache
 .vite/
 
-# Electron build artifacts
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Electron build artifacts (kept for reference)
 *.asar
 *.asar.unpacked
 

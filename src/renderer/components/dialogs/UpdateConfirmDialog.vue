@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Crepe } from "@milkdown/crepe";
 import { nextTick, ref, watch } from "vue";
+import { useTauriSystem } from "@/composables/useTauriSystem";
 
 interface Props {
   visible: boolean;
@@ -47,11 +48,12 @@ function openReleasePage() {
   // 我们暂时用 hardcode 或者假设 info 里有
   // 实际上 github api 返回的 html_url 就是 release page
   // 我们在 main process 里加一下
+  const { openExternal } = useTauriSystem();
   if (updateInfo.value.releasePageUrl) {
-    window.electronAPI.openExternal(updateInfo.value.releasePageUrl);
+    openExternal(updateInfo.value.releasePageUrl);
   } else {
     // Fallback
-    window.electronAPI.openExternal("https://github.com/auto-plugin/milkup/releases");
+    openExternal("https://github.com/auto-plugin/milkup/releases");
   }
 }
 

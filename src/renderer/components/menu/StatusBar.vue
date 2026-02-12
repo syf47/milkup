@@ -49,7 +49,11 @@ function countMarkdownChars(text: string): number {
   return (text.replaceAll("&#x20;", "").replace(base64Regex, "image").trim() || "").split("")
     .length;
 }
-window.electronAPI.on("view:toggleView", () => {
+
+// 使用 Tauri 事件监听
+import { useTauriEvents } from "@/composables/useTauriEvents";
+const { on } = useTauriEvents();
+on("view:toggleView", () => {
   toggleSourceCode();
 });
 </script>

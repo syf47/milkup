@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import autotoast from "autotoast.js";
+import { ref } from "vue";
+import { useTauriSystem } from "@/composables/useTauriSystem";
 import logo from "@/assets/icons/milkup.ico";
 import emitter from "@/renderer/events";
 import { checkUpdate } from "@/renderer/services/api/update";
 import { version } from "../../../../package.json";
-import { ref } from "vue";
 import LoadingIcon from "../ui/LoadingIcon.vue";
 
 function openByDefaultBrowser(url: string) {
-  window.electronAPI.openExternal(url);
+  const { openExternal } = useTauriSystem();
+  openExternal(url);
 }
 const updateInfo = JSON.parse(localStorage.getItem("updateInfo") || "{}");
 const isChecking = ref(false);

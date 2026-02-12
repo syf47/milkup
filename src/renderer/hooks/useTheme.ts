@@ -1,6 +1,7 @@
 import type { Theme, ThemeName } from "@/types/theme";
 import autotoast from "autotoast.js";
 import { getCurrentInstance, onMounted, onUnmounted, ref, toRaw } from "vue";
+import { useTauriSystem } from "@/composables/useTauriSystem";
 import { cssVarsDesMap, themeNameMap } from "@/config/theme";
 import themeManager from "@/renderer/utils/themeManager";
 import { randomUUID } from "@/renderer/utils/tool";
@@ -241,12 +242,14 @@ function saveTheme() {
 
 // 添加临时主题
 function addTempTheme(themeName?: ThemeName) {
+  const { openThemeEditor } = useTauriSystem();
+
   // 如果传入了主题名称，说明是编辑现有主题
   if (themeName) {
     // 存储到 localStorage
     setEditingThemeToStorage(themeName);
 
-    window.electronAPI.openThemeEditor();
+    openThemeEditor();
   } else {
     // 新增主题：基于当前主题创建新主题
     const themeList = themes.value.length ? themes.value : getThemes();
@@ -286,7 +289,7 @@ function addTempTheme(themeName?: ThemeName) {
     };
   }
 
-  window.electronAPI.openThemeEditor();
+  openThemeEditor();
 }
 
 // 删除本地主题

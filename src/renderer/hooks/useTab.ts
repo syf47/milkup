@@ -3,6 +3,9 @@ import type { InertiaScroll } from "@/renderer/utils/inertiaScroll";
 import type { Tab } from "@/types/tab";
 import autotoast from "autotoast.js";
 import { computed, nextTick, ref, watch } from "vue";
+import { useTauriEvents } from "@/composables/useTauriEvents";
+import { useTauriFile } from "@/composables/useTauriFile";
+import { useTauriWindow } from "@/composables/useTauriWindow";
 import { reverseProcessImagePaths, setCurrentMarkdownFilePath } from "@/plugins/imagePathPlugin";
 import emitter from "@/renderer/events";
 import { createTabDataFromFile, readAndProcessFile } from "@/renderer/services/fileService";
@@ -29,7 +32,10 @@ const defaultTab: Tab = {
 };
 tabs.value.push(defaultTab);
 activeTabId.value = defaultTab.id;
-window.electronAPI?.onOpenFileAtLaunch((_payload) => {
+
+// 使用 Tauri 事件监听
+const { on } = useTauriEvents();
+on("open-file-at-launch", (_payload) => {
   if (tabs.value.length === 1 && tabs.value[0].id === defaultTabUUid && !tabs.value[0].isModified) {
     tabs.value = [];
   }
@@ -169,9 +175,10 @@ async function saveCurrentTab(): Promise<boolean> {
   if (!currentTab || currentTab.readOnly) return false;
 
   try {
+    const { saveFile } = useTauriFile();
     // content 现在是处理过图片路径的内容，保存前需要还原
     const reversedContent = reverseProcessImagePaths(currentTab.content, currentTab.filePath);
-    const saved = await window.electronAPI.saveFile(currentTab.filePath, reversedContent);
+    const saved = await saveFile(currentTab.filePath, reversedContent);
     if (saved) {
       currentTab.filePath = saved;
       currentTab.name = getFileName(saved); // 更新标签名称
@@ -189,10 +196,11 @@ async function saveCurrentTab(): Promise<boolean> {
 // 从文件创建新tab
 async function createTabFromFile(filePath: string, content: string): Promise<Tab> {
   // 使用统一的文件服务创建Tab数据（现在是同步的）
+  const { isFileReadonly } = useTauriFile();
   const tabData = createTabDataFromFile(filePath, content);
 
   // 单独获取只读状态
-  const readOnly = (await window.electronAPI?.getIsReadOnly(filePath)) || false;
+  const readOnly = (await isFileReadonly(filePath)) || false;
 
   const tab: Tab = {
     id: randomUUID(),
@@ -413,7 +421,8 @@ function closeWithConfirm(id: string) {
   // 如果没有未保存内容
   if (isLastTab) {
     // 如果是最后一个tab，直接关闭应用
-    window.electronAPI.closeDiscard();
+    const { close: closeWindow } = useTauriWindow();
+    closeWindow();
   } else {
     // 否则直接关闭tab
     close(id);
@@ -477,9 +486,9 @@ watch(
     const hasPathChanges = hasNewPaths || hasRemovedPaths;
 
     if (!hasPathChanges) return;
-    // 通知ipc
-
-    window.electronAPI.watchFiles(newFilePaths);
+    // TODO: 实现文件监听功能
+    // 文件监听功能需要在 Rust 后端实现
+    console.log("Watching files:", newFilePaths);
   },
   {
     immediate: true,
@@ -487,7 +496,7 @@ watch(
 );
 
 // 文件变动回callback事件
-window.electronAPI.on?.("file:changed", async (paths) => {
+on("file:changed", async (paths: string) => {
   const tab = tabs.value.find((tab) => tab.filePath === paths);
   if (!tab) return;
 

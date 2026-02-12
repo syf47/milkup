@@ -14,19 +14,12 @@
     "type": "git",
     "url": "https://github.com/auto-plugin/milkup.git"
   },
-  "main": "dist-electron/main/index.js",
   "scripts": {
-    "build:main": "esbuild src/main/index.ts --bundle --platform=node --external:electron --outfile=dist-electron/main/index.js",
-    "build:preload": "esbuild src/preload.ts --bundle --platform=neutral --outfile=dist-electron/preload.js --external:electron --format=cjs",
-    "build": "pnpm run build:preload && pnpm run build:main && vite build",
-    "dev": "pnpm run build:preload && pnpm run build:main && vite",
-    "start:electron": "pnpm run build:preload && pnpm run build:main && electron dist-electron/main/index.js",
-    "dist": "pnpm run build && electron-builder",
-    "dist:mac-x64": "pnpm run build && electron-builder --mac --x64",
-    "dist:mac-arm64": "pnpm run build && electron-builder --mac --arm64",
-    "dist:linux-x64": "pnpm run build && electron-builder --linux --x64",
-    "dist:linux-arm64": "pnpm run build && electron-builder --linux --arm64",
-    "dist:win-x64": "pnpm run build && electron-builder --win --x64",
+    "dev": "tauri dev",
+    "dev:vite": "vite",
+    "build": "vite build && tauri build",
+    "build:vite": "vite build",
+    "tauri": "tauri",
     "lint": "oxlint . && oxfmt --check .",
     "format": "oxlint --fix . && oxfmt .",
     "prepare": "simple-git-hooks",
@@ -67,8 +60,6 @@
     "codemirror": "^6.0.2",
     "codemirror-lang-mermaid": "^0.5.0",
     "docx": "^9.5.1",
-    "electron-updater": "^6.7.3",
-    "font-list": "^1.5.1",
     "he": "^1.2.0",
     "mdast": "^3.0.0",
     "mermaid": "^11.10.0",
@@ -91,6 +82,15 @@
     "vue-draggable-plus": "^0.6.0"
   },
   "devDependencies": {
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/cli": "^2.10.0",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
+    "@tauri-apps/plugin-dialog": "^2.6.0",
+    "@tauri-apps/plugin-fs": "^2.4.5",
+    "@tauri-apps/plugin-os": "^2.3.2",
+    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-updater": "^2.10.0",
+    "@tauri-apps/plugin-window-state": "^2.4.1",
     "@types/he": "^1.2.3",
     "@types/mdast": "^4.0.4",
     "@types/node": "^24.3.0",
@@ -98,9 +98,6 @@
     "@vitejs/plugin-vue": "^6.0.1",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
-    "electron": "^37.3.1",
-    "electron-builder": "^26.0.12",
-    "esbuild": "^0.25.9",
     "genereleaselog": "^0.0.5",
     "less": "^4.4.1",
     "oxfmt": "^0.27.0",
@@ -108,8 +105,7 @@
     "picocolors": "^1.1.1",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.2",
-    "vite": "^7.1.3",
-    "vite-plugin-electron": "^0.29.0"
+    "vite": "^7.1.3"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged",
@@ -135,54 +131,10 @@
       "@codemirror/language": "^6.12.1"
     },
     "onlyBuiltDependencies": [
-      "electron",
-      "electron-winstaller",
-      "esbuild",
       "simple-git-hooks"
     ],
     "patchedDependencies": {
       "@milkdown/crepe": "patches/@milkdown__crepe.patch"
-    }
-  },
-  "build": {
-    "appId": "com.auto-plugin.milkup",
-    "productName": "milkup",
-    "files": [
-      "dist/**/*",
-      "dist-electron/**/*"
-    ],
-    "icon": "src/assets/icons/milkup",
-    "fileAssociations": [
-      {
-        "ext": "md",
-        "name": "Markdown Document",
-        "description": "Markdown File",
-        "role": "Editor",
-        "icon": "src/assets/icons/file"
-      }
-    ],
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    },
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "mac": {
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "target": [
-        "dmg"
-      ]
-    },
-    "linux": {
-      "target": "AppImage"
     }
   }
 }

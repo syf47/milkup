@@ -17,7 +17,8 @@ export function useUpdateDialog() {
 
   function handleCancel() {
     if (updateStatus.value === "downloading") {
-      window.electronAPI.cancelUpdate();
+      // TODO: 实现取消更新
+      console.warn("Cancel update needs to be implemented");
       // updateStatus and progress should be reset by 'update:status' event listeners
     }
     hideDialog();
@@ -33,7 +34,8 @@ export function useUpdateDialog() {
   async function handleUpdate() {
     updateStatus.value = "downloading";
     try {
-      await window.electronAPI.downloadUpdate();
+      // TODO: 实现更新下载
+      console.warn("Download update needs to be implemented");
     } catch (error) {
       console.error("Download failed:", error);
       autotoast.show("下载失败", "error");
@@ -43,7 +45,8 @@ export function useUpdateDialog() {
 
   // 安装并重启
   function handleInstall() {
-    window.electronAPI.quitAndInstall();
+    // TODO: 实现安装并重启
+    console.warn("Quit and install needs to be implemented");
   }
 
   function handleLater() {
@@ -80,8 +83,10 @@ export function useUpdateDialog() {
   };
 
   onMounted(() => {
-    window.electronAPI.onDownloadProgress(onProgress);
-    window.electronAPI.onUpdateStatus(onUpdateStatus);
+    // TODO: 实现更新进度监听
+    // const { on } = useTauriEvents()
+    // on('download-progress', onProgress);
+    // on('update-status', onUpdateStatus);
   });
 
   // ... (remove onUnmounted block if needed or keep)

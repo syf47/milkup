@@ -33,7 +33,9 @@ export async function readAndProcessFile(options: OpenFileOptions): Promise<File
 
   try {
     // 1. 读取文件
-    const result = await window.electronAPI.readFileByPath(filePath);
+    const { useTauriFile } = await import("@/composables/useTauriFile");
+    const { readFileByPath, isFileReadonly } = useTauriFile();
+    const result = await readFileByPath(filePath);
     if (!result) {
       console.error("无法读取文件:", filePath);
       return null;
@@ -51,14 +53,14 @@ export async function readAndProcessFile(options: OpenFileOptions): Promise<File
     // 3. 处理图片路径用于渲染 (基于修复后的内容)
     // processedContent 仅用于 Milkdown 渲染，不用于编辑
     const processedContent = processImages
-      ? processImagePaths(repairedContent, result.filePath)
+      ? processImagePaths(repairedContent, result.file_path)
       : repairedContent;
 
     // 获取且检查文件只读状态
-    const readOnly = checkReadOnly ? await window.electronAPI.getIsReadOnly(filePath) : false;
+    const readOnly = checkReadOnly ? await isFileReadonly(filePath) : false;
 
     return {
-      filePath: result.filePath,
+      filePath: result.file_path,
       content: repairedContent, // 原始内容（用于编辑）
       processedContent, // 处理后的内容（用于渲染）
       readOnly,

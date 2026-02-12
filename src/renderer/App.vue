@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { MilkdownProvider } from "@milkdown/vue";
+import { onMounted } from "vue";
+import { useTauriEvents } from "@/composables/useTauriEvents";
+import { useTauriWindow } from "@/composables/useTauriWindow";
 import emitter from "@/renderer/events";
 import useContent from "@/renderer/hooks/useContent";
 import { useContext } from "@/renderer/hooks/useContext";
@@ -20,6 +23,10 @@ import StatusBar from "./components/menu/StatusBar.vue";
 import TitleBar from "./components/menu/TitleBar.vue";
 import Outline from "./components/outline/Outline.vue";
 import { MilkupProvider } from "./context";
+
+// Tauri API
+const { on } = useTauriEvents();
+const { forceClose: closeWindow } = useTauriWindow();
 
 // ✅ 应用级事件协调器（仅负责事件监听和协调）
 const { editorKey } = useContext();
@@ -57,29 +64,6 @@ const {
   showDialog: showUpdateDialog,
 } = useUpdateDialog();
 
-// 监听主进程的关闭确认事件
-window.electronAPI.on("close:confirm", async () => {
-  await handleSafeClose("close");
-});
-
-// 监听Tab关闭确认事件
-emitter.on("tab:close-confirm", async (payload: any) => {
-  const { tabId, tabName } = payload;
-  const result = await showDialog(tabName);
-
-  if (result === "save") {
-    // 只有保存并成功才关闭
-    const saved = await saveCurrentTab();
-    if (saved) {
-      close(tabId);
-    }
-  } else if (result === "discard") {
-    // 放弃更改，直接关闭
-    close(tabId);
-  }
-  // cancel 则不做任何操作
-});
-
 const onUpdateAvailable = (payload: any) => {
   const info = payload || {};
 
@@ -91,30 +75,52 @@ const onUpdateAvailable = (payload: any) => {
   }
 };
 
-// 监听主进程的更新可用事件 (Auto Update)
-window.electronAPI.on("update:available", onUpdateAvailable);
-
-// 监听手动检查的更新可用事件 (Manual Check from About)
-import { onMounted, onUnmounted } from "vue";
-onMounted(() => {
+// 初始化和事件监听
+onMounted(async () => {
   initTheme();
   initFont();
   initOtherConfig();
+
+  // 监听关闭确认事件
+  console.log("[App] Setting up close:confirm listener");
+  await on("close:confirm", async () => {
+    console.log("[App] Received close:confirm event");
+    await handleSafeClose("close");
+  });
+
+  // 监听Tab关闭确认事件
+  emitter.on("tab:close-confirm", async (payload: any) => {
+    const { tabId, tabName } = payload;
+    const result = await showDialog(tabName);
+
+    if (result === "save") {
+      const saved = await saveCurrentTab();
+      if (saved) {
+        close(tabId);
+      }
+    } else if (result === "discard") {
+      close(tabId);
+    }
+  });
+
+  // 监听更新可用事件
+  await on("update:available", onUpdateAvailable);
   emitter.on("update:available", onUpdateAvailable);
-});
-onUnmounted(() => {
-  emitter.off("update:available", onUpdateAvailable);
-  emitter.off("tab:close-confirm");
 });
 
 // Reuse safe close logic
 async function handleSafeClose(action: "close" | "update") {
+  console.log("[App] handleSafeClose called with action:", action);
   const unsavedTabs = getUnsavedTabs();
+  console.log("[App] Unsaved tabs:", unsavedTabs.length);
+
   if (unsavedTabs.length === 0) {
+    console.log("[App] No unsaved tabs, closing window directly");
     if (action === "update") {
-      await window.electronAPI.quitAndInstall();
+      // TODO: 实现更新安装功能
+      console.warn("Update functionality needs to be implemented");
     } else {
-      window.electronAPI.closeDiscard();
+      await closeWindow();
     }
     return;
   }
@@ -143,9 +149,10 @@ async function handleSafeClose(action: "close" | "update") {
 
   // 所有此轮检查都通过（保存或丢弃），强制关闭/更新
   if (action === "update") {
-    window.electronAPI.quitAndInstall();
+    // TODO: 实现更新安装功能
+    console.warn("Update functionality needs to be implemented");
   } else {
-    window.electronAPI.closeDiscard();
+    await closeWindow();
   }
 }
 

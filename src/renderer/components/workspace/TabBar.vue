@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { vDraggable } from 'vue-draggable-plus'
-import useFile from '@/renderer/hooks/useFile'
-import useTab from '@/renderer/hooks/useTab'
+import { onMounted, onUnmounted, ref } from "vue";
+import { vDraggable } from "vue-draggable-plus";
+import { useTauriWindow } from "@/composables/useTauriWindow";
+import useFile from "@/renderer/hooks/useFile";
+import useTab from "@/renderer/hooks/useTab";
 
 const {
   formattedTabs,
@@ -14,99 +15,111 @@ const {
   setupTabScrollListener,
   cleanupInertiaScroll,
   reorderTabs,
-} = useTab()
+} = useTab();
 
-const { createNewFile } = useFile()
+const { createNewFile } = useFile();
 
 // 拦截 ctrl/cmd + w 快捷键关闭tab
 function handleCloseTabShortcut(e: KeyboardEvent) {
-  const isMac = window.electronAPI.platform === 'darwin'
-  if ((isMac ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === 'w') {
-    e.preventDefault()
+  const { isMac } = useTauriWindow();
+  if ((isMac ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === "w") {
+    e.preventDefault();
     if (activeTabId.value) {
-      closeWithConfirm(activeTabId.value)
+      closeWithConfirm(activeTabId.value);
     }
   }
 }
-window.addEventListener('keydown', handleCloseTabShortcut)
+window.addEventListener("keydown", handleCloseTabShortcut);
 
 // 获取tab容器的DOM引用
-const tabContainerRef = ref<HTMLElement | null>(null)
+const tabContainerRef = ref<HTMLElement | null>(null);
 
 // 保存wheel事件处理器引用以便正确移除
-let wheelHandler: ((event: WheelEvent) => void) | null = null
+let wheelHandler: ((event: WheelEvent) => void) | null = null;
 
 function handleTabClick(id: string) {
-  switchToTab(id)
+  switchToTab(id);
 }
 
 function handleAddTab() {
-  createNewFile()
+  createNewFile();
 }
 
 async function handleCloseTab(id: string, event: Event) {
-  event.stopPropagation()
-  closeWithConfirm(id)
+  event.stopPropagation();
+  closeWithConfirm(id);
 }
 
 // 处理拖动排序
-function handleDragEnd(event: { oldIndex: number, newIndex: number }) {
-  reorderTabs(event.oldIndex, event.newIndex)
+function handleDragEnd(event: { oldIndex: number; newIndex: number }) {
+  reorderTabs(event.oldIndex, event.newIndex);
 }
 
 // 因为vueTransition的移除会让元素回到父元素0,  so 需要保存位置信息
 function handleBeforeLeave(el: Element) {
-  const element = el as HTMLElement
-  const rect = element.getBoundingClientRect()
-  const parentRect = element.parentElement?.getBoundingClientRect()
+  const element = el as HTMLElement;
+  const rect = element.getBoundingClientRect();
+  const parentRect = element.parentElement?.getBoundingClientRect();
 
   if (parentRect) {
-    const left = rect.left - parentRect.left
-    const top = rect.top - parentRect.top
+    const left = rect.left - parentRect.left;
+    const top = rect.top - parentRect.top;
 
-    element.style.setProperty('--tab-left', `${left}px`)
-    element.style.setProperty('--tab-top', `${top}px`)
+    element.style.setProperty("--tab-left", `${left}px`);
+    element.style.setProperty("--tab-top", `${top}px`);
   }
 }
 
 // 设置滚动监听
-setupTabScrollListener(tabContainerRef)
+setupTabScrollListener(tabContainerRef);
 
 // 组件挂载时添加事件监听器
 onMounted(() => {
-  const container = tabContainerRef.value
+  const container = tabContainerRef.value;
   if (container) {
     // 创建并保存事件处理器引用
-    wheelHandler = (event: WheelEvent) => handleWheelScroll(event, tabContainerRef)
-    container.addEventListener('wheel', wheelHandler, { passive: false })
+    wheelHandler = (event: WheelEvent) => handleWheelScroll(event, tabContainerRef);
+    container.addEventListener("wheel", wheelHandler, { passive: false });
   }
-})
+});
 
 // 组件卸载时移除事件监听器和清理惯性滚动实例
 onUnmounted(() => {
-  const container = tabContainerRef.value
+  const container = tabContainerRef.value;
   if (container && wheelHandler) {
     // 使用保存的引用移除监听器
-    container.removeEventListener('wheel', wheelHandler)
+    container.removeEventListener("wheel", wheelHandler);
     // 清理惯性滚动实例
-    cleanupInertiaScroll(container)
+    cleanupInertiaScroll(container);
   }
   // 移除全局键盘事件监听器
-  window.removeEventListener('keydown', handleCloseTabShortcut)
-})
+  window.removeEventListener("keydown", handleCloseTabShortcut);
+});
 </script>
 
 <template>
-  <div ref="tabContainerRef" class="tabBarContarner" :class="{ 'offset-right': shouldOffsetTabBar }">
+  <div
+    ref="tabContainerRef"
+    class="tabBarContarner"
+    :class="{ 'offset-right': shouldOffsetTabBar }"
+  >
     <TransitionGroup
       v-draggable="[formattedTabs, { animation: 1500, onEnd: handleDragEnd, ghostClass: 'ghost' }]"
-      name="tab" class="tabBar" mode="out-in" tag="div" @before-leave="handleBeforeLeave"
+      name="tab"
+      class="tabBar"
+      mode="out-in"
+      tag="div"
+      @before-leave="handleBeforeLeave"
     >
       <div
-        v-for="tab in formattedTabs" :key="tab.id" class="tabItem" :class="{ active: activeTabId === tab.id }"
-        :data-tab-id="tab.id" @click="handleTabClick(tab.id)"
+        v-for="tab in formattedTabs"
+        :key="tab.id"
+        class="tabItem"
+        :class="{ active: activeTabId === tab.id }"
+        :data-tab-id="tab.id"
+        @click="handleTabClick(tab.id)"
       >
-        <p>{{ `${tab.readOnly ? '[只读] ' : ''}${tab.displayName}` }}</p>
+        <p>{{ `${tab.readOnly ? "[只读] " : ""}${tab.displayName}` }}</p>
 
         <div class="closeIcon">
           <span class="iconfont icon-close" @click="handleCloseTab(tab.id, $event)"></span>
@@ -115,7 +128,10 @@ onUnmounted(() => {
         <!-- pre -->
 
         <svg
-          :class="{ active: activeTabId === tab.id }" class="pre" viewBox="0 0 5 5" fill="none"
+          :class="{ active: activeTabId === tab.id }"
+          class="pre"
+          viewBox="0 0 5 5"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <path d="M5 5L0 5C3.33333 5 5 3.33333 5 -2.18557e-07L5 5Z" />
@@ -123,7 +139,10 @@ onUnmounted(() => {
 
         <!-- after -->
         <svg
-          :class="{ active: activeTabId === tab.id }" class="after" viewBox="0 0 5 5" fill="none"
+          :class="{ active: activeTabId === tab.id }"
+          class="after"
+          viewBox="0 0 5 5"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <path d="M0 5L5 5C1.66667 5 7.28523e-08 3.33333 2.18557e-07 -2.18557e-07L0 5Z" />
@@ -140,7 +159,6 @@ onUnmounted(() => {
 
 <style lang="less" scoped>
 .tabBarContarner {
-
   flex: 1;
   height: 100%;
   display: flex;
@@ -149,7 +167,7 @@ onUnmounted(() => {
   justify-content: flex-end;
   overflow-x: scroll;
   overflow-y: hidden;
-  transition: margin-left 0.6s 0.02s cubic-bezier(0.035, 0.630, 0.000, 1.000); //一个延迟能变得高级，你就学吧
+  transition: margin-left 0.6s 0.02s cubic-bezier(0.035, 0.63, 0, 1); //一个延迟能变得高级，你就学吧
 
   &::-webkit-scrollbar {
     display: none;
@@ -203,7 +221,6 @@ onUnmounted(() => {
       }
 
       .closeIcon:hover {
-
         span {
           color: var(--text-color-1);
         }
@@ -228,7 +245,6 @@ onUnmounted(() => {
         &:hover {
           color: var(--border-color-2);
         }
-
       }
 
       &.active {
@@ -243,11 +259,9 @@ onUnmounted(() => {
         span {
           color: var(--text-color-1);
         }
-
       }
 
       &:hover {
-
         z-index: 1;
 
         p {
@@ -255,17 +269,14 @@ onUnmounted(() => {
         }
 
         .closeIcon {
-
           span {
             color: var(--text-color-2);
           }
         }
-
       }
     }
 
     .addTab {
-
       display: flex;
       align-items: center;
       justify-content: center;
@@ -282,7 +293,6 @@ onUnmounted(() => {
         cursor: pointer;
         color: var(--text-color-3);
         padding: 4px 11px;
-
       }
 
       .addTabLine {
@@ -293,7 +303,6 @@ onUnmounted(() => {
 
       &:hover {
         span {
-
           background: var(--hover-color);
         }
 
@@ -301,7 +310,6 @@ onUnmounted(() => {
           background: var(--border-color-2);
         }
       }
-
     }
 
     .pre {
@@ -319,7 +327,6 @@ onUnmounted(() => {
       &.active {
         fill: var(--background-color-1);
       }
-
     }
 
     .after {
